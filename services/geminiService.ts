@@ -3,20 +3,20 @@ import { GoogleGenAI } from "@google/genai";
 import { TargetRegion, SearchResult, ParsedLead } from "../types";
 
 const getClient = () => {
-    const apiKey = process.env.API_KEY;
-    if (!apiKey) {
-      throw new Error("API_KEY is not set in environment variables");
-    }
-    return new GoogleGenAI({ apiKey });
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("API Key missing. Please set VITE_GEMINI_API_KEY in your environment variables.");
+  }
+  return new GoogleGenAI({ apiKey });
 }
 
 export const searchLeads = async (
-  region: TargetRegion, 
+  region: TargetRegion,
   customInstructions: string,
   excludeCompanies: string[] = []
 ): Promise<SearchResult> => {
   const ai = getClient();
-  
+
   const prompt = `
     Act as a senior sales researcher for Entech (entechsmart.com), a company specializing in smart building solutions, energy management, and boiler controls/retrofits.
     
@@ -70,51 +70,53 @@ export const searchLeads = async (
     });
 
     const text = response.text || "[]";
-    
+
     let parsedLeads: ParsedLead[] = [];
 
     try {
       // Clean the markdown code blocks if present
       const jsonString = text.replace(/```json/g, '').replace(/```/g, '').trim();
       const rawData = JSON.parse(jsonString);
-      
+
       parsedLeads = rawData.map((item: any) => {
         // Normalize Company URL
         let cleanCompanyUrl = item.companyUrl;
         if (cleanCompanyUrl && !cleanCompanyUrl.startsWith('http')) {
-            cleanCompanyUrl = `https://${cleanCompanyUrl}`;
+          cleanCompanyUrl = `https://${cleanCompanyUrl}`;
         }
 
         // Robust Portfolio Size Parsing
         // Handles "2,000", "2000+", "approx 5000"
         let portfolioSize = 0;
         if (typeof item.estimatedPortfolio === 'number') {
-            portfolioSize = item.estimatedPortfolio;
+          portfolioSize = item.estimatedPortfolio;
         } else if (typeof item.estimatedPortfolio === 'string') {
-            const digits = item.estimatedPortfolio.replace(/[^0-9]/g, '');
-            portfolioSize = parseInt(digits, 10);
-            if (isNaN(portfolioSize)) portfolioSize = 0;
+          const digits = item.estimatedPortfolio.replace(/[^0-9]/g, '');
+          portfolioSize = parseInt(digits, 10);
+          if (isNaN(portfolioSize)) portfolioSize = 0;
         }
 
         return {
-            id: crypto.randomUUID(),
-            companyName: item.companyName || "Unknown Company",
-            companyUrl: cleanCompanyUrl,
-            decisionMaker: {
-                name: item.decisionMaker?.name || "Unknown",
-                title: item.decisionMaker?.title || "N/A",
-                contactDetails: item.decisionMaker?.contactDetails
-            },
-            estimatedPortfolio: portfolioSize,
-            portfolioDescription: item.portfolioDescription || "No description available",
-            strategy: item.strategy || "Research company further",
-            region: region
+          id: crypto.randomUUID(),
+          companyName: item.companyName || "Unknown Company",
+          companyUrl: cleanCompanyUrl,
+          decisionMaker: {
+            name: item.decisionMaker?.name || "Unknown",
+            title: item.decisionMaker?.title || "N/A",
+            contactDetails: item.decisionMaker?.contactDetails
+          },
+          estimatedPortfolio: portfolioSize,
+          portfolioDescription: item.portfolioDescription || "No description available",
+          strategy: item.strategy || "Research company further",
+          region: region
         };
       });
 
     } catch (parseError) {
-      console.error("JSON Parse Error", parseError, text);
-      parsedLeads = []; 
+      console.error("JSON Parse Error", parseError);
+      console.log("Raw Text:", text);
+      // Throwing the error so the UI can show it, instead of silently returning empty
+      throw new Error(`Failed to parse leads from AI response. Raw response: ${text.substring(0, 100)}...`);
     }
 
     return {
@@ -128,12 +130,12 @@ export const searchLeads = async (
 };
 
 export const generateOutreachMessage = async (
-    lead: ParsedLead, 
-    type: 'email'
-  ): Promise<string> => {
-    const ai = getClient();
-    
-    const prompt = `
+  lead: ParsedLead,
+  type: 'email'
+): Promise<string> => {
+  const ai = getClient();
+
+  const prompt = `
       Write a cold email for Entech (entechsmart.com) to send to this lead.
       
       LEAD DETAILS:
@@ -153,11 +155,11 @@ export const generateOutreachMessage = async (
       - Subject: Catchy, relevant to their role (e.g. "${lead.decisionMaker.title} / ${lead.companyName} Heating Ops").
       - Format: Plain text.
     `;
-  
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-    });
-  
-    return response.text || "Could not generate message.";
-  };
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: prompt,
+  });
+
+  return response.text || "Could not generate message.";
+};
