@@ -10,6 +10,19 @@ const getClient = () => {
   return new GoogleGenAI({ apiKey });
 }
 
+const retryWithBackoff = async <T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> => {
+  try {
+    return await fn();
+  } catch (error: any) {
+    if (retries === 0 || (error.status !== 503 && error.status !== 429)) {
+      throw error;
+    }
+    console.log(`API Error ${error.status}. Retrying in ${delay}ms...`);
+    await new Promise(resolve => setTimeout(resolve, delay));
+    return retryWithBackoff(fn, retries - 1, delay * 2);
+  }
+};
+
 export const searchLeads = async (
   region: TargetRegion,
   customInstructions: string,
@@ -63,13 +76,13 @@ export const searchLeads = async (
   `;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await retryWithBackoff(() => ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
       },
-    });
+    }));
 
     const text = response.text || "[]";
 
