@@ -77,7 +77,7 @@ export const searchLeads = async (
 
   try {
     const response = await retryWithBackoff(() => ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
@@ -179,7 +179,7 @@ export const generateOutreachMessage = async (
     `;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-2.0-flash-exp',
+    model: 'gemini-2.5-flash',
     contents: prompt,
   });
 

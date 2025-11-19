@@ -32,28 +32,16 @@ async function testKey() {
     const ai = new GoogleGenAI({ apiKey });
 
     try {
-        console.log("Listing available models...");
-        try {
-            const listResponse = await ai.models.list();
-            console.log("Available Models:");
-            listResponse.models.forEach(m => {
-                console.log(`- ${m.name} (${m.displayName})`);
-            });
-        } catch (e) {
-            console.log("Could not list models:", e.message);
-        }
-
-        console.log("Attempting with 'gemini-2.0-flash-exp' (latest)...");
+        console.log("Attempting to generate content with 'gemini-2.5-flash'...");
         const response = await ai.models.generateContent({
-            model: 'gemini-2.0-flash-exp',
+            model: 'gemini-2.5-flash',
             contents: "Reply with exactly the word 'Success'.",
         });
 
         console.log("Response received!");
         console.log("Output:", response.text);
         console.log("---------------------------------------------------");
-        console.log("✅ SUCCESS: 'gemini-2.0-flash-exp' is the correct model name.");
-        console.log("I will update the application to use this name.");
+        console.log("✅ SUCCESS: 'gemini-2.5-flash' is working!");
         console.log("---------------------------------------------------");
 
     } catch (error) {
@@ -61,11 +49,6 @@ async function testKey() {
         console.error("❌ FAILED: The API request failed.");
         console.error("Error Status:", error.status);
         console.error("Error Message:", error.message);
-
-        if (error.status === 404) {
-            console.log("\n👉 DIAGNOSIS: MODEL NOT FOUND.");
-            console.log("The model name is still incorrect.");
-        }
         console.log("---------------------------------------------------");
     }
 }
