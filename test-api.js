@@ -32,17 +32,28 @@ async function testKey() {
     const ai = new GoogleGenAI({ apiKey });
 
     try {
-        console.log("Attempting to generate content with 'gemini-1.5-flash'...");
+        console.log("Listing available models...");
+        try {
+            const listResponse = await ai.models.list();
+            console.log("Available Models:");
+            listResponse.models.forEach(m => {
+                console.log(`- ${m.name} (${m.displayName})`);
+            });
+        } catch (e) {
+            console.log("Could not list models:", e.message);
+        }
+
+        console.log("Attempting with 'gemini-2.0-flash-exp' (latest)...");
         const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-2.0-flash-exp',
             contents: "Reply with exactly the word 'Success'.",
         });
 
         console.log("Response received!");
         console.log("Output:", response.text);
         console.log("---------------------------------------------------");
-        console.log("✅ SUCCESS: Your API key is valid and working.");
-        console.log("If you still see 503 errors in the app, it is a temporary server overload.");
+        console.log("✅ SUCCESS: 'gemini-2.0-flash-exp' is the correct model name.");
+        console.log("I will update the application to use this name.");
         console.log("---------------------------------------------------");
 
     } catch (error) {
@@ -51,16 +62,9 @@ async function testKey() {
         console.error("Error Status:", error.status);
         console.error("Error Message:", error.message);
 
-        if (error.status === 403 || error.message?.includes("permission")) {
-            console.log("\n👉 DIAGNOSIS: ACCESS DENIED.");
-            console.log("This usually means your API key does not have access to the 'gemini-2.5-flash' model.");
-            console.log("Check if you have enabled billing or if the model is available in your region.");
-        } else if (error.status === 400 && error.message?.includes("API key not valid")) {
-            console.log("\n👉 DIAGNOSIS: INVALID KEY.");
-            console.log("Double check that you copied the key correctly.");
-        } else if (error.status === 429) {
-            console.log("\n👉 DIAGNOSIS: QUOTA EXCEEDED.");
-            console.log("You have hit the rate limit. If on free tier, wait a minute.");
+        if (error.status === 404) {
+            console.log("\n👉 DIAGNOSIS: MODEL NOT FOUND.");
+            console.log("The model name is still incorrect.");
         }
         console.log("---------------------------------------------------");
     }
