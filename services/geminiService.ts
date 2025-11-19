@@ -43,7 +43,7 @@ export const searchLeads = async (
     6. **Entech Strategy**: Why are they a fit? (e.g., "Old steam heating systems need controls", "Compliance with local energy laws").
 
     OUTPUT FORMAT:
-    Return ONLY a valid JSON array.
+    Return ONLY a valid JSON array. Do not include any conversational text, explanations, or markdown formatting outside the JSON array.
     [
       {
         "companyName": "Name",
@@ -58,6 +58,8 @@ export const searchLeads = async (
         "region": "${region}"
       }
     ]
+    
+    Remember: Return ONLY the JSON array.
   `;
 
   try {
@@ -73,9 +75,16 @@ export const searchLeads = async (
 
     let parsedLeads: ParsedLead[] = [];
 
+
     try {
-      // Clean the markdown code blocks if present
-      const jsonString = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      // Use regex to find the JSON array within the text, handling potential conversational wrapper text
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+
+      if (!jsonMatch) {
+        throw new Error("No JSON array found in response");
+      }
+
+      const jsonString = jsonMatch[0];
       const rawData = JSON.parse(jsonString);
 
       parsedLeads = rawData.map((item: any) => {
