@@ -32,9 +32,9 @@ async function testKey() {
     const ai = new GoogleGenAI({ apiKey });
 
     try {
-        console.log("Attempting to generate content with 'gemini-2.5-flash'...");
+        console.log("Attempting to generate content with 'gemini-1.5-flash'...");
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-1.5-flash',
             contents: "Reply with exactly the word 'Success'.",
         });
 

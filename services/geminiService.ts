@@ -10,7 +10,7 @@ const getClient = () => {
   return new GoogleGenAI({ apiKey });
 }
 
-const retryWithBackoff = async <T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> => {
+const retryWithBackoff = async <T>(fn: () => Promise<T>, retries = 5, delay = 2000): Promise<T> => {
   try {
     return await fn();
   } catch (error: any) {
@@ -77,7 +77,7 @@ export const searchLeads = async (
 
   try {
     const response = await retryWithBackoff(() => ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-1.5-flash',
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
@@ -179,7 +179,7 @@ export const generateOutreachMessage = async (
     `;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-1.5-flash',
     contents: prompt,
   });
 
